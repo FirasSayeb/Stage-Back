@@ -1,0 +1,376 @@
+<?php
+
+use App\Models\User;
+use App\Models\Haves;
+use App\Models\Eleves;
+use App\Mail\HelloMail;
+use App\Models\Classes;
+use App\Models\Actualite;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\MailController;
+
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+    return $request->user();
+});
+
+Route::post('/auth', function (Request $request) {
+    $email = $request->input('email'); 
+    $password = $request->input('password');
+
+    $user = DB::table('users')
+        ->join('roles', 'users.role_id', '=', 'roles.id')
+        ->select('users.id','users.name', 'users.password', 'roles.name as role_name')
+        ->where('users.email', $email)
+        ->first();  
+
+    if ($user) {
+        if (password_verify($password, $user->password)) { 
+            switch ($user->role_name) {
+                case 'admin':
+                    return response()->json(['redirect_url' => 'admin'], 200);
+                    break;
+                case 'parent':
+                    return response()->json(['redirect_url' => 'parent'], 200);
+                    break;
+                case 'enseignant':
+                    return response()->json(['redirect_url' => 'enseignant'], 200);
+                    break;
+                default:
+                    return response()->json(['message' => 'Unknown role'], 401);
+                    break;
+            }
+        } else {
+            return response()->json(['message' => 'Invalid password'], 401);
+        }
+    } else {
+        return response()->json(['message' => 'User not found'], 404);
+    }
+}); 
+Route::post('/newpass', function (Request $request) {
+    $password = $request->input('password');
+    $email = $request->input('email');
+    $user = User::where('email', $email)->first(); 
+    if ($user) {
+        $user->password = $password;
+        $user->save();
+        return response()->json(['message' => 'Password reset successfully'], 200);
+    }
+    return response()->json(['message' => 'Failed to reset password'], 500);
+}); 
+Route::get('/getActualites', function () {
+    
+    $actualites = DB::table('actualites')
+        ->join('users', 'users.id', '=', 'actualites.user_id')
+        ->orderBy('actualites.created_at', 'desc')
+        ->select('actualites.file_path','actualites.id', 'actualites.body', 'actualites.created_at', 'users.name as userName','users.avatar as avatar')
+        ->get();  
+
+    return response()->json(['list' => $actualites], 200);
+}); 
+
+Route::post ('/respass',[MailController::class,'maildata'])->name('send_mail');
+Route::post('/addActualite', function (Request $request) {
+    $body = $request->input('body');
+    $email = $request->input('email');
+    $user = User::where('email', $email)->first();
+
+    if (!$user) {
+        return response()->json(['message' => 'User not found'], 404);
+    }
+
+    
+
+    $created_at = now();
+
+    $actualite = new Actualite();
+    $actualite->body = $body;
+    $actualite->file_path = $request->input('file');
+    $actualite->user_id = $user->id;
+    $actualite->created_at = $created_at;
+
+    if ($actualite->save()) {
+        return response()->json(['message' => 'Actualite added successfully'], 200);
+    } else {
+        return response()->json(['message' => 'Failed to add actualite'], 500);
+    }
+});
+Route::get('/getActualite/{id}', function ($id) {
+    $actualite = DB::table('actualites')
+        ->join('users', 'users.id', '=', 'actualites.user_id')
+        ->where('actualites.id', $id)
+        ->select('actualites.file_path', 'actualites.id', 'actualites.body', 'actualites.created_at', 'users.name as userName')
+        ->get();  
+
+    return response()->json(['actualite' => $actualite], 200);
+});
+Route::delete('/deleteActualite/{id}', function($id) {
+    try {
+        $actualite = Actualite::findOrFail($id); 
+        $actualite->delete();
+        return response()->json(['message' => 'Actualite deleted successfully'], 200);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Failed to delete actualite', 'message' => $e->getMessage()], 500);
+    }
+});
+Route::put('/updateActualite/{id}',function(Request $request,$id){
+    $actualite = Actualite::findOrFail($id);
+    $actualite->body=$request->input('body');
+    $actualite->file_path=$request->input('file');
+    $actualite->updated_at=now();
+    $actualite->save(); 
+
+        return response()->json(['message' => 'Actualite updated successfully']);
+});
+Route::get('/getUser/{email}',function($email){ 
+    $user = User::where('email', $email)->first();
+    if ($user) {
+       
+        return response()->json(['user' => $user], 200);
+    } else { 
+       
+        return response()->json(['error' => 'User not found'], 404);
+    }
+});
+Route::put('/updateUser', function (Request $request) {
+    $user = User::where('email', $request->input('email'))->first();
+    if($request->input('password')){
+    $user->password = $request->input('password');}
+    $user->avatar = $request->input('file');
+    $user->phone = $request->input('phone'); 
+    $user->address = $request->input('address'); 
+    $user->save();
+
+    return response()->json(['message' => 'User updated successfully'], 200);
+});
+Route::get('/getParents',function(){ 
+    $parents=User::where('role_id',3)->get();
+    return response()->json(['list'=>$parents],200);
+}); 
+Route::delete('/deleteParent/{email}', function($email) {
+    try {
+        $parent = User::where('email',$email)->first(); 
+        $parent->delete();
+        return response()->json(['message' => 'parent deleted successfully'], 200);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Failed to delete parent', 'message' => $e->getMessage()], 500);
+    }
+}); 
+Route::post('/addParent', function(Request $request) {
+    
+    $user = new User(); 
+    $user->role_id = 3;
+    $user->name = $request->input('name');
+    $user->email = $request->input('email');
+    $user->password = $request->input('password'); 
+    $user->avatar = $request->input('file');
+    $user->address = $request->input('address'); 
+    $user->phone = $request->input('phone');
+    $user->save();
+
+    
+    Mail::to($user->email)->send(new HelloMail($user->name, 'firassayeb2@gmail.com', 'Welcome!', 'Your account has been created. Here are your login credentials: Email: '.$user->email.' Password: '.$request->input('password')));
+
+    return response()->json(['message' => 'Parent added successfully and email sent.'], 200);
+});
+Route::post('/addClasse', function(Request $request) {
+    
+    $classe = new Classes(); 
+    $classe->name=$request->input('body');
+    $classe->emploi=$request->input('file');
+    $classe->examens=$request->input('examen');
+    $classe->save();
+    return response()->json(['message' => 'Classe added successfully .'], 200);
+});
+Route::get('/getClasses', function () {
+ 
+       $classes =Classes::all();  
+
+    return response()->json(['list' => $classes], 200);
+});  
+Route::delete('/deleteClasse/{name}', function($name) {
+    try {
+        $classe = Classes::where('name',$name)->first(); 
+        $classe->delete();
+        return response()->json(['message' => 'classe deleted successfully'], 200);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Failed to delete classe', 'message' => $e->getMessage()], 500);
+    }
+}); 
+Route::get('/getClasse/{id}',function($id){ 
+    $classe = Classes::where('id', $id)->first();
+    if ($classe) { 
+       
+        return response()->json(['classe' => $classe], 200);
+    } else { 
+       
+        return response()->json(['error' => 'classe not found'], 404);
+    }
+});
+Route::put('/updateClasse/{id}',function(Request $request,$id){
+    $classe = Classes::findOrFail($id);
+    if($request->input('body')){
+        $classe->name=$request->input('body');
+    }
+    if($request->input('file')){
+        $classe->emploi=$request->input('file');
+    } 
+    if($request->input('examens')){
+        $classe->examens=$request->input('examens');
+    }
+    $classe->updated_at=now();  
+    $classe->save(); 
+
+        return response()->json(['message' => 'Classe updated successfully'],200);
+});
+Route::get('/getEleves', function () {
+    $eleves = Eleves::with('class', 'parents')->get();
+
+    $transformedEleves = $eleves->map(function ($eleve) {
+        return [
+            'id' => $eleve->id,
+            'profil'=> $eleve->profil,
+            'name' => $eleve->name, 
+            'lastname' => $eleve->lastname,
+            'date_of_birth'=>$eleve->date_of_birth,
+            'class_name' => $eleve->class->name,
+            'parent_names' => $eleve->parents->pluck('name')->toArray(),
+        ];
+    });
+
+    return response()->json(['list' => $transformedEleves], 200);
+});
+
+Route::post('/addEleve',function(Request $request){
+    $eleve=new Eleves();
+    $eleve->name=$request->input('name');
+    $eleve->profil=$request->input('file');
+    $eleve->lastname=$request->input('lastname');
+    $eleve->date_of_birth=$request->input('date');
+    $eleve->class_id=Classes::where('name',$request->input('class'))->first()->id;
+    $eleve->save();
+    $parent1Email = $request->input('parent1'); 
+    $parent2Email = $request->input('parent2'); 
+
+    
+    $parent1Id = User::where('email', $parent1Email)->value('id');
+    $parent2Id = User::where('email', $parent2Email)->value('id');
+
+    
+    if ($parent1Id) {
+        $eleveUser1 = new Haves();
+        $eleveUser1->eleve_id = $eleve->id;
+        $eleveUser1->user_id = $parent1Id; 
+        $eleveUser1->save();
+    }
+
+    if ($parent2Id) {
+        $eleveUser2 = new Haves(); 
+        $eleveUser2->eleve_id = $eleve->id;
+        $eleveUser2->user_id = $parent2Id;
+        $eleveUser2->save();
+    }
+    return response()->json(['message' => 'eleve added successfully'],200);
+
+});
+Route::delete('/deleteEleve/{name}', function($name) {
+    try {
+        $eleve = Eleves::where('name',$name)->first(); 
+        $eleve->delete();
+        return response()->json(['message' => 'eleve deleted successfully'], 200);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Failed to delete eleve', 'message' => $e->getMessage()], 500);
+    }
+});
+Route::get('/getEleve/{id}', function($id) {
+    $eleve = Eleves::with('class', 'parents')->find($id);
+
+    if ($eleve) {
+        $transformedEleve = [
+            'id' => $eleve->id,
+            'profil'=> $eleve->profil,
+            'name' => $eleve->name, 
+            'lastname' => $eleve->lastname,
+            'date_of_birth' => $eleve->date_of_birth,
+            'class_name' => $eleve->class->name,
+            'parent_names' => $eleve->parents->pluck('email')->toArray(),
+        ];
+
+        return response()->json(['eleve' => $transformedEleve], 200);
+    } else {
+        return response()->json(['error' => 'Eleve not found'], 404);
+    }
+});
+
+Route::put('/updateEleve/{id}', function (Request $request, $id) {
+    $eleve = Eleves::findOrFail($id);
+
+    
+    $eleve->name = $request->input('name');
+    $eleve->lastname = $request->input('lastname');
+    $eleve->date_of_birth = $request->input('date');
+    $eleve->profil = $request->input('file');
+   
+    if ($request->has('class')) {
+        $className = $request->input('class');
+        $class = Classes::where('name', $className)->first();
+        if ($class) {
+            $eleve->class_id = $class->id;
+        }
+    }
+         
+     
+    $eleve->save();
+
+    
+    $parent1Email = $request->input('parent1');
+    $parent2Email = $request->input('parent2');
+
+   
+    $parent1Id = User::where('email', $parent1Email)->value('id');
+    $parent2Id = User::where('email', $parent2Email)->value('id');
+
+     
+    $parentsToSync = []; 
+    if ($parent1Id) {
+        $parentsToSync[$parent1Id] = ['created_at' => now(), 'updated_at' => now()];
+    }
+    if ($parent2Id) {
+        $parentsToSync[$parent2Id] = ['created_at' => now(), 'updated_at' => now()];
+    }
+    $eleve->parents()->sync($parentsToSync);
+
+    return response()->json(['message' => 'eleve updated successfully'], 200);
+});
+Route::get('/getEnseignants',function(){ 
+    $parents=User::where('role_id',4)->get();
+    return response()->json(['list'=>$parents],200);
+});
+Route::post('/addEnseignant', function(Request $request) {
+    
+    $user = new User(); 
+    $user->role_id = 4; 
+    $user->name = $request->input('name');
+    $user->email = $request->input('email');
+    $user->password = $request->input('password'); 
+    $user->avatar = $request->input('file');
+    $user->address = $request->input('address'); 
+    $user->phone = $request->input('phone');
+    $user->save(); 
+
+    
+    Mail::to($user->email)->send(new HelloMail($user->name, 'firassayeb2@gmail.com', 'Welcome!', 'Your account has been created. Here are your login credentials: Email: '.$user->email.' Password: '.$request->input('password')));
+
+    return response()->json(['message' => 'Parent added successfully and email sent.'], 200);
+});
+Route::delete('/deleteEnseignant/{email}', function($email) {
+    try {
+        $parent = User::where('email',$email)->first(); 
+        $parent->delete(); 
+        return response()->json(['message' => 'parent deleted successfully'], 200);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Failed to delete parent', 'message' => $e->getMessage()], 500);
+    }
+});
