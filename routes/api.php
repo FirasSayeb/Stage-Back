@@ -7,7 +7,9 @@ use App\Mail\HelloMail;
 use App\Models\Classes;
 use App\Models\Teaches;
 use App\Models\Actualite;
+use App\Models\Notification;
 use Illuminate\Http\Request;
+use App\Models\notifications;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
@@ -147,7 +149,7 @@ Route::put('/updateUser', function (Request $request) {
     return response()->json(['message' => 'User updated successfully'], 200);
 });
 Route::get('/getParents',function(){ 
-    $parents=User::where('role_id',3)->get();
+    $parents=User::where('role_id',2)->get();
     return response()->json(['list'=>$parents],200);
 }); 
 Route::delete('/deleteParent/{email}', function($email) {
@@ -162,7 +164,7 @@ Route::delete('/deleteParent/{email}', function($email) {
 Route::post('/addParent', function(Request $request) {
     
     $user = new User(); 
-    $user->role_id = 3;
+    $user->role_id = 2;
     $user->name = $request->input('name');
     $user->email = $request->input('email');
     $user->password = $request->input('password'); 
@@ -346,13 +348,13 @@ Route::put('/updateEleve/{id}', function (Request $request, $id) {
     return response()->json(['message' => 'eleve updated successfully'], 200);
 });
 Route::get('/getEnseignants',function(){ 
-    $parents=User::where('role_id',4)->get();
+    $parents=User::where('role_id',3)->get();
     return response()->json(['list'=>$parents],200);
 });
 Route::post('/addEnseignant', function(Request $request) {
     
     $user = new User(); 
-    $user->role_id = 4; 
+    $user->role_id = 3; 
     $user->name = $request->input('name');
     $user->email = $request->input('email');
     $user->password = $request->input('password'); 
@@ -416,5 +418,42 @@ Route::put('/updateEnseignant', function(Request $request) {
        
         return response()->json(['message' => 'Failed to update Enseignant', 'error' => $e->getMessage()], 500);
     }
+}); 
+Route::get('/getUsers',function(){
+   $list=User::all();
+   return response()->json(['list'=>$list],200);
 });
-  
+Route::post('/addNotification', function(Request $request) {
+    $user = User::where('email', $request->input('email'))->first(); 
+    if (!$user) {
+        return response()->json(['message' => 'User not found'], 404);
+    }
+
+    $notification = new Notification();
+    $notification->user_id = $user->id; 
+    $notification->body = $request->input('message');
+    $notification->save();
+    
+    $usersList =explode(',', $request->input('list'));   
+
+    foreach ($usersList as $userName) {
+        $destUser = User::where('email', $userName)->first();
+        if ($destUser) {  
+            DB::table('notification_user')->insert([
+                'notification_id' => $notification->id,
+                'user_id' => $destUser->id
+            ]); 
+        } else {
+            return response()->json(['message' => 'User not found: ' . $userName], 404);
+        }
+    }
+
+    if ($notification->exists) {
+        return response()->json(['message' => 'Notification added successfully'], 200);
+    } else {
+        return response()->json(['message' => 'Failed to add notification'], 500);
+    }
+});
+
+
+
