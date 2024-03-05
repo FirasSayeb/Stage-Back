@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Eleves;
+use App\Models\Classes;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +14,10 @@ class User extends \TCG\Voyager\Models\User
 {
     use HasApiTokens, HasFactory, Notifiable;
     
- 
+    public function classes()
+    { 
+        return $this->belongsToMany(Classes::class ,'teaches' , 'user_id','class_id');
+    } 
 
     /**
      * The attributes that are mass assignable.

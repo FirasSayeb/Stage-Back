@@ -5,6 +5,7 @@ use App\Models\Haves;
 use App\Models\Eleves;
 use App\Mail\HelloMail;
 use App\Models\Classes;
+use App\Models\Teaches;
 use App\Models\Actualite;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -359,11 +360,24 @@ Route::post('/addEnseignant', function(Request $request) {
     $user->address = $request->input('address'); 
     $user->phone = $request->input('phone');
     $user->save(); 
+    $classList = explode(',', $request->input('list'));
 
-    
+foreach ($classList as $className) {
+    $class = Classes::where('name', $className)->first();
+    if ($class) {
+        $teaches = new Teaches();
+        $teaches->user_id = $user->id;
+        $teaches->class_id = $class->id;
+        $teaches->save();
+    } else {
+        return response()->json(['message' => 'Class not found: ' . $className], 404);
+    }
+}
+
+
     Mail::to($user->email)->send(new HelloMail($user->name, 'firassayeb2@gmail.com', 'Welcome!', 'Your account has been created. Here are your login credentials: Email: '.$user->email.' Password: '.$request->input('password')));
 
-    return response()->json(['message' => 'Parent added successfully and email sent.'], 200);
+    return response()->json(['message' => 'Enseignant added successfully and email sent.'], 200);
 });
 Route::delete('/deleteEnseignant/{email}', function($email) {
     try {
@@ -374,3 +388,33 @@ Route::delete('/deleteEnseignant/{email}', function($email) {
         return response()->json(['error' => 'Failed to delete parent', 'message' => $e->getMessage()], 500);
     }
 });
+Route::put('/updateEnseignant', function(Request $request) {
+    try {
+       
+        $user = User::where('email', $request->input('email'))->first();
+        if ($request->has('password')) {
+            $user->password = bcrypt($request->input('password'));
+        }
+        if ($request->has('file')) {
+            
+            $user->avatar = $request->input('file');
+        }
+        $user->phone = $request->input('phone');
+        $user->address = $request->input('address');
+        $user->save(); 
+        $classesToSync = [];
+        
+            $classList = explode(',', $request->input('list'));
+            foreach ($classList as $className) {
+                $class = Classes::where('name', $className)->first();
+               
+                     $classesToSync[$class->id] = ['created_at' => now(), 'updated_at' => now()];
+            } 
+        $user->classes()->sync($classesToSync,false);        
+        return response()->json(['message' => 'Enseignant updated successfully'], 200);
+    } catch (Exception $e) {
+       
+        return response()->json(['message' => 'Failed to update Enseignant', 'error' => $e->getMessage()], 500);
+    }
+});
+  
