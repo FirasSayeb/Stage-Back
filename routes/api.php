@@ -446,7 +446,7 @@ Route::post('/addNotification', function(Request $request) {
         } else {
             return response()->json(['message' => 'User not found: ' . $userName], 404);
         }
-    }
+    } 
 
     if ($notification->exists) {
         return response()->json(['message' => 'Notification added successfully'], 200);
