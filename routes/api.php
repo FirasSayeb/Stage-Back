@@ -443,28 +443,7 @@ Route::post('/addNotification', function(Request $request) {
                 'notification_id' => $notification->id,
                 'user_id' => $destUser->id
             ]); 
-            $deviceToken = $destUser->device_token;
-
-           
-            $message = [
-                'notification' => [
-                    'title' => 'New Notification',
-                    'body' => $notification->body,
-                ],
-                'to' => $deviceToken,
-            ];  
-
-            $response = Http::withHeaders([
-                'Authorization' => 'zN_f3M4qPnFf8aTn-LH41ngEiirxPPeMTHcuxpm4_8w', 
-                'Content-Type' => 'application/json',
-            ])->post('https://fcm.googleapis.com/fcm/send', $message);
-
-           
-            if ($response->successful()) {
-                
-            } else {
-                
-            }
+            
         } else {
             return response()->json(['message' => 'User not found: ' . $userName], 404);
         }
