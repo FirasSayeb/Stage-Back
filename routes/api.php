@@ -6,6 +6,7 @@ use App\Models\Eleves;
 use App\Mail\HelloMail;
 use App\Models\Classes;
 use App\Models\Teaches;
+use App\Models\Services;
 use App\Models\Actualite;
 use App\Models\Notification;
 use Illuminate\Http\Request;
@@ -469,3 +470,43 @@ Route::get('/getNotification',function(){
     $not=DB::table('notification_user')->get();
     return response()->json(['list'=>$not],200);
  });
+Route::get('/getServices',function(){
+    $list=Services::all();
+    return response()->json(['list',$list],200);
+});
+Route::post('/addService',function(Request $request){
+    $service=new Services();
+    $service->name=$request->input('name');
+    $service->price=$request->input('price');
+    $service->save();
+    return response()->json(['message'=>'service added successfully'],200); 
+});
+Route::get('/getService/{id}',function($id){
+    $service=Services::find($id);
+    return response()->json(['service',$service],200);
+});
+Route::delete('/deleteService/{name}', function($name) {
+    $service = Services::where('name', $name)->first();
+    if ($service) {
+        $service->delete();
+        return response()->json(['message' => 'Service deleted successfully'], 200);
+    } else {
+        return response()->json(['message' => 'Service not found'], 404);
+    }
+});
+
+Route::put('/updateService/{name}', function($name, Request $request) {
+    $service = Services::where('name', $name)->first();
+    if ($service) {
+        if ($request->input('name')) { 
+            $service->name = $request->input('name');
+        }
+        if ($request->input('price')) {
+            $service->price = $request->input('price');
+        }
+        $service->save();
+        return response()->json(['message' => 'Service modified successfully'], 200);
+    } else {
+        return response()->json(['message' => 'Service not found'], 404);
+    }
+});
