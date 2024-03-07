@@ -312,12 +312,14 @@ Route::get('/getEleve/{id}', function($id) {
 Route::put('/updateEleve/{id}', function (Request $request, $id) {
     $eleve = Eleves::findOrFail($id);
 
-    
-    $eleve->name = $request->input('name');
-    $eleve->lastname = $request->input('lastname');
+    if ($request->has('name')) {
+    $eleve->name = $request->input('name');}
+    if ($request->has('lastname')) {
+    $eleve->lastname = $request->input('lastname');}
     if ($request->has('date')) {
     $eleve->date_of_birth = $request->input('date');}
-    $eleve->profil = $request->input('file');
+    if ($request->has('file')) {
+    $eleve->profil = $request->input('file');}
    
     if ($request->has('class')) {
         $className = $request->input('class');
