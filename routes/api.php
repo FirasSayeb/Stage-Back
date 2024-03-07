@@ -315,7 +315,8 @@ Route::put('/updateEleve/{id}', function (Request $request, $id) {
     
     $eleve->name = $request->input('name');
     $eleve->lastname = $request->input('lastname');
-    $eleve->date_of_birth = $request->input('date');
+    if ($request->has('date')) {
+    $eleve->date_of_birth = $request->input('date');}
     $eleve->profil = $request->input('file');
    
     if ($request->has('class')) {
