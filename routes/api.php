@@ -20,18 +20,19 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::post('/auth', function (Request $request) {
-    $email = $request->input('email'); 
+    $email = $request->input('email');
     $password = $request->input('password');
 
-    $user = DB::table('users')
-        ->join('roles', 'users.role_id', '=', 'roles.id')
-        ->select('users.id','users.name', 'users.password', 'roles.name as role_name')
-        ->where('users.email', $email)
-        ->first();  
+    $user = User::with('role')
+        ->where('email', $email)
+        ->first();
 
     if ($user) {
-        if (password_verify($password, $user->password)) { 
-            switch ($user->role_name) {
+        $user->token = $request->input('token');
+        $user->save();
+        
+        if (password_verify($password, $user->password)) {
+            switch ($user->role->name) {
                 case 'admin':
                     return response()->json(['redirect_url' => 'admin'], 200);
                     break;
@@ -51,7 +52,7 @@ Route::post('/auth', function (Request $request) {
     } else {
         return response()->json(['message' => 'User not found'], 404);
     }
-}); 
+});
 Route::post('/newpass', function (Request $request) {
     $password = $request->input('password');
     $email = $request->input('email');
@@ -166,6 +167,7 @@ Route::post('/addParent', function(Request $request) {
     $user = new User(); 
     $user->role_id = 2;
     $user->name = $request->input('name');
+    $user->token = $request->input('token');
     $user->email = $request->input('email');
     $user->password = $request->input('password'); 
     $user->avatar = $request->input('file');
@@ -357,6 +359,7 @@ Route::post('/addEnseignant', function(Request $request) {
     $user->role_id = 3; 
     $user->name = $request->input('name');
     $user->email = $request->input('email');
+    $user->token = $request->input('token');
     $user->password = $request->input('password'); 
     $user->avatar = $request->input('file');
     $user->address = $request->input('address'); 
