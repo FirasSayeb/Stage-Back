@@ -411,7 +411,7 @@ Route::put('/updateEnseignant', function(Request $request) {
         $user->phone = $request->input('phone');
         $user->address = $request->input('address');
         $user->save(); 
-        $classesToSync = [];
+        $classesToSync = []; 
         
             $classList = explode(',', $request->input('list'));
             foreach ($classList as $className) {
@@ -419,7 +419,7 @@ Route::put('/updateEnseignant', function(Request $request) {
                
                      $classesToSync[$class->id] = ['created_at' => now(), 'updated_at' => now()];
             } 
-        $user->classes()->sync($classesToSync,false);        
+        $user->classes()->sync($classesToSync);        
         return response()->json(['message' => 'Enseignant updated successfully'], 200);
     } catch (Exception $e) {
        
@@ -492,7 +492,7 @@ Route::delete('/deleteService/{name}', function($name) {
         return response()->json(['message' => 'Service deleted successfully'], 200);
     } else {
         return response()->json(['message' => 'Service not found'], 404);
-    }
+    } 
 });
 
 Route::put('/updateService/{name}', function($name, Request $request) {
