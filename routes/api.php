@@ -472,7 +472,7 @@ Route::get('/getNotification',function(){
  });
 Route::get('/getServices',function(){
     $list=Services::all();
-    return response()->json(['list',$list],200);
+    return response()->json(['list'=> $list],200);
 });
 Route::post('/addService',function(Request $request){
     $service=new Services();
@@ -481,9 +481,9 @@ Route::post('/addService',function(Request $request){
     $service->save();
     return response()->json(['message'=>'service added successfully'],200); 
 });
-Route::get('/getService/{id}',function($id){
-    $service=Services::find($id);
-    return response()->json(['service',$service],200);
+Route::get('/getService/{name}',function($name){
+    $service = Services::where('name', $name)->first();
+    return response()->json(['service'=>$service],200);
 });
 Route::delete('/deleteService/{name}', function($name) {
     $service = Services::where('name', $name)->first();
@@ -504,7 +504,7 @@ Route::put('/updateService/{name}', function($name, Request $request) {
         if ($request->input('price')) {
             $service->price = $request->input('price');
         }
-        $service->save();
+        $service->save(); 
         return response()->json(['message' => 'Service modified successfully'], 200);
     } else {
         return response()->json(['message' => 'Service not found'], 404);
