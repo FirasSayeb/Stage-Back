@@ -3,6 +3,7 @@
 use App\Models\User;
 use App\Models\Haves;
 use App\Models\Eleves;
+use App\Models\Events;
 use App\Mail\HelloMail;
 use App\Models\Classes;
 use App\Models\Teaches;
@@ -435,7 +436,7 @@ Route::post('/addNotification', function(Request $request) {
     if (!$user) {
         return response()->json(['message' => 'User not found'], 404);
     }
-
+ 
     $notification = new Notification();
     $notification->user_id = $user->id; 
     $notification->body = $request->input('message');
@@ -508,5 +509,48 @@ Route::put('/updateService/{name}', function($name, Request $request) {
         return response()->json(['message' => 'Service modified successfully'], 200);
     } else {
         return response()->json(['message' => 'Service not found'], 404);
+    }
+});
+Route::get('/getEvents',function(){
+    $list=Events::all();
+    return response()->json(['list'=> $list],200);
+}); 
+Route::post('/addEvent',function(Request $request){
+    $event=new Events(); 
+    $event->name=$request->input('name');
+    $event->price=$request->input('price');
+    $event->date=$request->input('date');
+    $event->save();
+    return response()->json(['message'=>'event added successfully'],200); 
+}); 
+Route::get('/getEvent/{name}',function($name){
+    $event = Events::where('name', $name)->first();
+    return response()->json(['event'=>$event],200);
+});
+Route::delete('/deleteEvent/{name}', function($name) {
+    $event = Events::where('name', $name)->first();
+    if ($event) {
+        $event->delete();
+        return response()->json(['message' => 'Event deleted successfully'], 200);
+    } else {
+        return response()->json(['message' => 'event not found'], 404);
+    } 
+});
+Route::put('/updateEvent/{name}', function($name, Request $request) {
+    $event = Events::where('name', $name)->first();
+    if ($event) { 
+        if ($request->input('name')) { 
+            $event->name = $request->input('name');
+        }
+        if ($request->input('price')) {
+            $event->price = $request->input('price');
+        }
+         if ($request->input('date')) {
+            $event->date = $request->input('date');
+        }
+        $event->save();  
+        return response()->json(['message' => 'Event modified successfully'], 200);
+    } else {
+        return response()->json(['message' => 'Event not found'], 404);
     }
 });
