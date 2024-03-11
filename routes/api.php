@@ -9,6 +9,7 @@ use App\Models\Classes;
 use App\Models\Teaches;
 use App\Models\Services;
 use App\Models\Actualite;
+use App\Models\Exercices;
 use App\Models\Notification;
 use Illuminate\Http\Request;
 use App\Models\notifications;
@@ -552,5 +553,56 @@ Route::put('/updateEvent/{name}', function($name, Request $request) {
         return response()->json(['message' => 'Event modified successfully'], 200);
     } else {
         return response()->json(['message' => 'Event not found'], 404);
+    }
+});
+Route::get('/getExercices',function(){
+    $list=Exercices::all(); 
+    return response()->json(['list'=> $list],200);
+}); 
+Route::post('/addExercice',function(Request $request){
+    $exercice=new Exercices(); 
+    $exercice->name=$request->input('name');  
+    $exercice->description=$request->input('description');
+    if ($request->input('class')) {
+        $className = $request->input('class');
+        $class = Classes::where('name', $className)->first();
+        if ($class) {
+            $exercice->class_id = $class->id;
+        } else {
+           
+        }
+    }
+    
+    $exercice->save();
+    return response()->json(['message'=>'exercice added successfully'],200); 
+}); 
+Route::get('/getExercice/{name}',function($name){
+    $event = Exercices::where('name', $name)->first();
+    return response()->json(['exercice'=>$event],200);
+});
+Route::delete('/deleteExercice/{name}', function($name) {
+    $event = Exercices::where('name', $name)->first();
+    if ($event) { 
+        $event->delete();
+        return response()->json(['message' => 'exercice deleted successfully'], 200);
+    } else {
+        return response()->json(['message' => 'exercice not found'], 404);
+    } 
+});
+Route::put('/updateExercice/{name}', function($name, Request $request) {
+    $event = Exercices::where('name', $name)->first();
+    if ($event) { 
+        if ($request->input('name')) { 
+            $event->name = $request->input('name');
+        } 
+        if ($request->input('description')) {
+            $event->description = $request->input('description');
+        }
+       
+       
+        $event->save();  
+        return response()->json(['message' => 'exercice modified successfully'], 200);
+    } else { 
+        return response()->json(['message' => 'exercice not found'], 404);
     }
 });
