@@ -555,10 +555,17 @@ Route::put('/updateEvent/{name}', function($name, Request $request) {
         return response()->json(['message' => 'Event not found'], 404);
     }
 });
-Route::get('/getExercices',function(){
-    $list=Exercices::all(); 
-    return response()->json(['list'=> $list],200);
-}); 
+Route::get('/getExercices/{name}', function($name) {
+    $class = Classes::where('name', $name)->first();
+    
+    if ($class) {
+        $exercises = Exercices::where('class_id', $class->id)->get();
+        return response()->json(['list' => $exercises], 200);
+    } else {
+        return response()->json(['message' => 'Class not found'], 404);
+    }
+});
+ 
 Route::post('/addExercice',function(Request $request){
     $exercice=new Exercices(); 
     $exercice->name=$request->input('name');  
@@ -604,5 +611,25 @@ Route::put('/updateExercice/{name}', function($name, Request $request) {
         return response()->json(['message' => 'exercice modified successfully'], 200);
     } else { 
         return response()->json(['message' => 'exercice not found'], 404);
+    }
+});
+Route::get('/getUsers/{name}', function($name) {
+     
+    $class = Classes::where('name', $name)->first();
+
+    if ($class) {
+        
+        $students = $class->eleves;
+
+        
+        $parents = $students->flatMap(function ($student) {
+            return $student->parents;
+        });
+
+        
+        return response()->json(['list'=>$parents],200); 
+    } else {
+         
+        return response()->json(['message' => 'Class not found'], 404);
     }
 });
