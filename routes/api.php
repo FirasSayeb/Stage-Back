@@ -558,14 +558,14 @@ Route::put('/updateEvent/{name}', function($name, Request $request) {
 Route::get('/getExercices/{name}', function($name) {
     $class = Classes::where('name', $name)->first();
     
-    if ($class) {
+    if ($class) { 
         $exercises = Exercices::where('class_id', $class->id)->get();
         return response()->json(['list' => $exercises], 200);
     } else {
         return response()->json(['message' => 'Class not found'], 404);
     }
 });
- 
+  
 Route::post('/addExercice',function(Request $request){
     $exercice=new Exercices(); 
     $exercice->name=$request->input('name');  
