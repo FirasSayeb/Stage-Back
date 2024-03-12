@@ -581,6 +581,21 @@ Route::post('/addExercice',function(Request $request){
     }
     
     $exercice->save();
+    $user = User::where('email', $request->input('email'))->first();
+    $notification = new Notification();
+    $notification->user_id = $user->id; 
+    $notification->body =$exercice->name;
+    $notification->save(); 
+    $destUsers=$class->eleves->flatMap(function ($student) {
+        return $student->parents;
+    });
+    foreach($destUsers as $destUser){
+        DB::table('notification_user')->insert([
+            'notification_id' => $notification->id,
+            'user_id' => $destUser->id
+        ]); 
+    }
+     
     return response()->json(['message'=>'exercice added successfully'],200); 
 }); 
 Route::get('/getExercice/{name}',function($name){
