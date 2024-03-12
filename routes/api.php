@@ -643,3 +643,10 @@ Route::get('/getEleves/{name}', function($name) {
         return response()->json(['message' => 'Class not found'], 404);
     }
 });
+Route::get('/getParents/{name}', function($name) {
+    $eleve=Eleves::where('name',$name)->first();
+    if($eleve){
+        $parents=$eleve->parents;
+    }
+    return response()->json(['list' => $parents], 200);
+});
