@@ -665,36 +665,34 @@ Route::get('/getParents/{name}', function($name) {
     }
     return response()->json(['list' => $parents], 200);
 });
-Route::post('/addNote', function(Request $request) {
+
+    Route::post('/addNote', function(Request $request) {
     
-    $request->validate([
-        'file' => 'required|mimes:xlsx,xls', 
-    ]);
-
-   
-    if ($request->hasFile('file')) {
-       
-        $file = $request->file('file');
-
-        
-        $data = Excel::toCollection([], $file);
-
-        
-        foreach ($data[0] as $row) {
+     
+        if ($request->hasFile('file')) {
+                 
+            $file = $request->file('file');
             
-
-            
-            Note::create([
-                'eleve_id' => $row[0], 
-                'matiere' => $row[1], 
-                'note' => $row[2],
+            $request->validate([
+                'file' => 'required|mimes:xlsx,xls', 
             ]);
-        }  
-
+    
+           
+            $data = Excel::import($file);
+    
+              
+            foreach ($data as $row) {
+                Note::create([
+                    'eleve_id' => $row[0], 
+                    'matiere' => $row[1], 
+                    'note' => $row[2],
+                ]);
+            }
+    
+           
+            return response()->json(['message' => 'File uploaded and processed successfully'], 200);
+        }   
+    
         
-        return response()->json(['message' => 'Data imported successfully'], 200);
-    }  
-
-   
-    return response()->json(['error' => 'No file uploaded'], 400);
-});
+        return response()->json(['error' => 'No file uploaded'], 400);
+    });
