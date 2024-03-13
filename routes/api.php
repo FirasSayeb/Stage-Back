@@ -1,5 +1,5 @@
 <?php
-
+use Maatwebsite\Excel\Facades\Excel;
 use App\Models\User;
 use App\Models\Haves;
 use App\Models\Eleves;
@@ -664,4 +664,37 @@ Route::get('/getParents/{name}', function($name) {
         $parents=$eleve->parents;
     }
     return response()->json(['list' => $parents], 200);
+});
+Route::post('/addNote', function(Request $request) {
+    
+    $request->validate([
+        'file' => 'required|mimes:xlsx,xls', 
+    ]);
+
+   
+    if ($request->hasFile('file')) {
+       
+        $file = $request->file('file');
+
+        
+        $data = Excel::toCollection([], $file);
+
+        
+        foreach ($data[0] as $row) {
+            
+
+            
+            Note::create([
+                'eleve_id' => $row[0], 
+                'matiere' => $row[1], 
+                'note' => $row[2],
+            ]);
+        }  
+
+        
+        return response()->json(['message' => 'Data imported successfully'], 200);
+    }  
+
+   
+    return response()->json(['error' => 'No file uploaded'], 400);
 });
