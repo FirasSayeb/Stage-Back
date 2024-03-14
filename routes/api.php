@@ -667,13 +667,13 @@ Route::get('/getParents/{name}', function($name) {
 });
 
 Route::post('/addNote', function(Request $request) {
-    if ($request->hasFile('file')) {
+      if ($request->hasFile('file')) {
         $file = $request->file('file');
         
         $request->validate([ 
             'file' => 'required|mimes:xlsx,xls', 
         ]);
-
+      
         $data = Excel::toArray([], $file);
 
         $success = true;
