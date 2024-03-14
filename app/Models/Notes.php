@@ -8,4 +8,5 @@ use Illuminate\Database\Eloquent\Model;
 class Notes extends Model
 {
     use HasFactory;
+    protected $fillable = ['eleve_id', 'matiere', 'note'];
 }

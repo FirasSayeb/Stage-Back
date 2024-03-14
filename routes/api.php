@@ -666,33 +666,41 @@ Route::get('/getParents/{name}', function($name) {
     return response()->json(['list' => $parents], 200);
 });
 
-    Route::post('/addNote', function(Request $request) {
-    
-     
-        if ($request->hasFile('file')) {
-                 
-            $file = $request->file('file');
-            
-            $request->validate([
-                'file' => 'required|mimes:xlsx,xls', 
-            ]);
-    
-           
-            $data = Excel::import($file);
-    
-              
-            foreach ($data as $row) {
-                Note::create([
-                    'eleve_id' => $row[0], 
-                    'matiere' => $row[1], 
-                    'note' => $row[2],
-                ]);
-            }
-    
-           
-            return response()->json(['message' => 'File uploaded and processed successfully'], 200);
-        }   
-    
+Route::post('/addNote', function(Request $request) {
+    if ($request->hasFile('file')) {
+        $file = $request->file('file');
         
+        $request->validate([ 
+            'file' => 'required|mimes:xlsx,xls', 
+        ]);
+
+        $data = Excel::toArray([], $file);
+
+        $success = true;
+
+        foreach ($data[0] as $row) { 
+            $eleve_id = $row[0] ?? null;
+            $matiere = $row[1] ?? null;
+            $note = $row[2] ?? null; 
+        
+            if ($eleve_id !== null && $matiere !== null && $note !== null) {
+                Notes::create([
+                    'eleve_id' => $eleve_id,
+                    'matiere' => $matiere,
+                    'note' => $note,
+                ]);
+            } else {
+               
+                $success = false;
+            }
+        }
+
+        if ($success) {
+            return response()->json(['message' => 'File uploaded and processed successfully'], 200);
+        } else {
+            return response()->json(['error' => 'Some rows could not be processed.'], 400);
+        }
+    } else {
         return response()->json(['error' => 'No file uploaded'], 400);
-    });
+    }
+});
