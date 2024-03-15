@@ -696,7 +696,18 @@ Route::post('/addNote', function(Request $request) {
             }
         }
  
-        if ($success) {
+        if ($success) {$user = User::where('email', $request->input('email'))->first();
+            $notification = new Notification();
+            $notification->user_id = $user->id; 
+            $notification->body ="Notes Sont Disponibles ";
+            $notification->save();
+            $parents=User::where('role_id',2)->get();
+            foreach($parents as $parent){
+                DB::table('notification_user')->insert([
+                    'notification_id' => $notification->id,
+                    'user_id' => $parent->id 
+                ]); 
+            }
             return response()->json(['message' => 'File uploaded and processed successfully'], 200);
         } else {
             return response()->json(['error' => 'Some rows could not be processed.'], 400);
@@ -705,3 +716,7 @@ Route::post('/addNote', function(Request $request) {
         return response()->json(['error' => 'No file uploaded'], 400);
     }
 });
+Route::get('/getParents',function(){
+    $parents=User::where('role_id',2)->get();
+    return response()->json(['list'=>$parents],200);
+});   
