@@ -1,7 +1,7 @@
 <?php
-use Maatwebsite\Excel\Facades\Excel;
 use App\Models\User;
 use App\Models\Haves;
+use App\Models\Notes;
 use App\Models\Eleves;
 use App\Models\Events;
 use App\Mail\HelloMail;
@@ -11,13 +11,14 @@ use App\Models\Services;
 use App\Models\Actualite;
 use App\Models\Exercices;
 use App\Models\Notification;
-use Illuminate\Http\Request;
+use Illuminate\Http\Request; 
 use App\Models\notifications;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\MailController;
-
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
@@ -665,15 +666,15 @@ Route::get('/getParents/{name}', function($name) {
     }
     return response()->json(['list' => $parents], 200);
 });
-
+ 
 Route::post('/addNote', function(Request $request) {
-      if ($request->hasFile('file')) {
+    if ($request->hasFile('file')) {
         $file = $request->file('file');
         
-        $request->validate([ 
+        $request->validate([
             'file' => 'required|mimes:xlsx,xls', 
         ]);
-      
+
         $data = Excel::toArray([], $file);
 
         $success = true;
@@ -681,7 +682,7 @@ Route::post('/addNote', function(Request $request) {
         foreach ($data[0] as $row) { 
             $eleve_id = $row[0] ?? null;
             $matiere = $row[1] ?? null;
-            $note = $row[2] ?? null; 
+            $note = $row[2] ?? null;
         
             if ($eleve_id !== null && $matiere !== null && $note !== null) {
                 Notes::create([
@@ -690,11 +691,11 @@ Route::post('/addNote', function(Request $request) {
                     'note' => $note,
                 ]);
             } else {
-               
+                // Handle missing or invalid data
                 $success = false;
             }
         }
-
+ 
         if ($success) {
             return response()->json(['message' => 'File uploaded and processed successfully'], 200);
         } else {
