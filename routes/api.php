@@ -773,4 +773,34 @@ Route::get('/getNotes/{id}',function($id){
         
         return response()->json(['error' => 'Eleve not found'], 404);
     }
+});
+Route::get('/getExer/{id}',function($id){
+    $eleve=Eleves::find($id);
+    $exercises=[];
+    if($eleve){
+    $exs=Exercices::where('class_id',$eleve->class_id)->get();
+    foreach($exs as $ex){
+      $exercises[]=$ex;
+    }return response()->json(['list' => $exercises]);
+} else {
+    
+    return response()->json(['error' => 'Eleve not found'], 404);
+}
 }); 
+Route::get('/getNoti/{email}', function ($email) {
+    $user = User::where('email', $email)->first();
+
+    if (!$user) {
+        return response()->json(['error' => 'User not found'], 404);
+    }
+
+    
+    $notificationIds = DB::table('notification_user')->where('user_id', $user->id)->pluck('notification_id');
+
+   
+    $notifications = Notification::whereIn('id', $notificationIds)->orderBy('created_at', 'desc')->get();
+
+    return response()->json(['list' => $notifications]);
+});
+
+
