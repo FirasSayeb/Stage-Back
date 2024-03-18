@@ -19,6 +19,7 @@ class User extends \TCG\Voyager\Models\User
         return $this->belongsToMany(Classes::class ,'teaches' , 'user_id','class_id');
     } 
     
+    
     /**
      * The attributes that are mass assignable.
      *

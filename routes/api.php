@@ -683,19 +683,29 @@ Route::post('/addNote', function(Request $request) {
             $eleve_id = $row[0] ?? null;
             $matiere = $row[1] ?? null;
             $note = $row[2] ?? null;
-        
+         
             if ($eleve_id !== null && $matiere !== null && $note !== null) {
-                Notes::create([
-                    'eleve_id' => $eleve_id,
-                    'matiere' => $matiere,
-                    'note' => $note,
-                ]);
+                error_log($eleve_id);
+                error_log($matiere);
+                error_log($note);
+                
+                try {
+                    Notes::create([
+                        'eleve_id' => $eleve_id,
+                        'matiere' => $matiere,
+                        'note' => $note,
+                    ]); 
+                    error_log('success');
+                } catch (\Exception $e) {
+                    error_log('Error creating Notes instance: ' . $e->getMessage());
+                    $success = false;
+                }
             } else {
                 // Handle missing or invalid data
                 $success = false;
             }
+            
         }
- 
         if ($success) {$user = User::where('email', $request->input('email'))->first();
             $notification = new Notification();
             $notification->user_id = $user->id; 
@@ -720,3 +730,47 @@ Route::get('/getParents',function(){
     $parents=User::where('role_id',2)->get();
     return response()->json(['list'=>$parents],200);
 });   
+Route::get('/getFils/{email}', function($email) {
+   
+    
+    $parent = User::where('email', $email)->first();
+
+    if ($parent) {
+        
+        $haves = Haves::where('user_id', $parent->id)->get();
+        
+        
+        $eleves = [];
+    
+       
+        foreach ($haves as $have) {
+            
+            $eleve = Eleves::find($have->eleve_id);
+            
+            
+            if ($eleve) {
+                $eleves[] = $eleve;
+            }
+        }
+
+        
+        return response()->json(['list' => $eleves]);
+    } else {
+        
+        return response()->json(['error' => 'User not found'], 404);
+    }
+});
+Route::get('/getNotes/{id}',function($id){
+    $eleve=Eleves::find($id);
+    $notes=[];
+    if($eleve){
+    $notts=Notes::where('eleve_id',$id)->get();
+    foreach($notts as $n){
+      $notes[]=$n;
+    }
+    return response()->json(['list' => $notes]);
+    } else {
+        
+        return response()->json(['error' => 'Eleve not found'], 404);
+    }
+}); 
