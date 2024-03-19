@@ -830,8 +830,27 @@ Route::post('/addSer',function(Request $request){
     return response()->json(['message' => 'Service added successfuly'],200);
 });
 Route::delete('/delSer/{id}', function($id) {
-    DB::table('demandser')->where('service_id', $id)->delete();
+    DB::table('demandser')->where('eleve_id', $id)->delete();
     return response()->json(['message' => 'Service deleted successfully'], 200);
 });
+Route::get('/getEvt/{id}',function($id){
+    $list=DB::table('demandevt')->where('eleve_id',$id)->get();
+    return response()->json(['list' => $list],200);
+});
+Route::post('/addEvt',function(Request $request){
+    $eleve=$request->input('eleve');
+    $event=$request->input('event');
+    error_log($eleve);
+    error_log($event);
+    DB::table('demandevt')->insert([
+        'eleve_id' => $eleve,
+        'event_id' => $event
+    ]); 
+    return response()->json(['message' => 'Event added successfuly'],200);
+});
+Route::delete('/delEvt/{id}', function($id) {
+    DB::table('demandevt')->where('eleve_id', $id)->delete();
+    return response()->json(['message' => 'Event deleted successfully'], 200);
+}); 
 
 
