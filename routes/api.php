@@ -814,5 +814,24 @@ Route::get('/getNoti/{email}', function ($email) {
 
     return response()->json(['list' => $notifications]);
 });
+Route::get('/getSer/{id}',function($id){
+    $list=DB::table('demandser')->where('eleve_id',$id)->get();
+    return response()->json(['list' => $list],200);
+});
+Route::post('/addSer',function(Request $request){
+    $eleve=$request->input('eleve');
+    $service=$request->input('service');
+    error_log($eleve);
+    error_log($service);
+    DB::table('demandser')->insert([
+        'eleve_id' => $eleve,
+        'service_id' => $service
+    ]); 
+    return response()->json(['message' => 'Service added successfuly'],200);
+});
+Route::delete('/delSer/{id}', function($id) {
+    DB::table('demandser')->where('service_id', $id)->delete();
+    return response()->json(['message' => 'Service deleted successfully'], 200);
+});
 
 
