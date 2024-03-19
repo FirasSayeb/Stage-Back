@@ -240,6 +240,7 @@ Route::get('/getEleves', function () {
     $transformedEleves = $eleves->map(function ($eleve) {
         return [
             'id' => $eleve->id,
+            'num'=>$eleve->num,
             'profil'=> $eleve->profil,
             'name' => $eleve->name, 
             'lastname' => $eleve->lastname,
@@ -255,6 +256,7 @@ Route::get('/getEleves', function () {
 Route::post('/addEleve',function(Request $request){
     $eleve=new Eleves();
     $eleve->name=$request->input('name');
+    $eleve->num=$request->input('num');
     $eleve->profil=$request->input('file');
     $eleve->lastname=$request->input('lastname');
     $eleve->date_of_birth=$request->input('date');
@@ -299,6 +301,7 @@ Route::get('/getEleve/{id}', function($id) {
     if ($eleve) {
         $transformedEleve = [
             'id' => $eleve->id,
+            'num'=>$eleve->num,
             'profil'=> $eleve->profil,
             'name' => $eleve->name, 
             'lastname' => $eleve->lastname,
@@ -311,7 +314,7 @@ Route::get('/getEleve/{id}', function($id) {
     } else {
         return response()->json(['error' => 'Eleve not found'], 404);
     }
-});
+}); 
 
 Route::put('/updateEleve/{id}', function (Request $request, $id) {
     $eleve = Eleves::findOrFail($id);
@@ -680,32 +683,41 @@ Route::post('/addNote', function(Request $request) {
         $success = true;
 
         foreach ($data[0] as $row) { 
-            $eleve_id = $row[0] ?? null;
+            $eleve_num = $row[0] ?? null;
             $matiere = $row[1] ?? null;
             $note = $row[2] ?? null;
-         
-            if ($eleve_id !== null && $matiere !== null && $note !== null) {
-                error_log($eleve_id);
+        
+            if ($eleve_num !== null && $matiere !== null && $note !== null) {
+                error_log($eleve_num);
                 error_log($matiere);
                 error_log($note);
                 
-                try {
-                    Notes::create([
-                        'eleve_id' => $eleve_id,
-                        'matiere' => $matiere,
-                        'note' => $note,
-                    ]); 
-                    error_log('success');
-                } catch (\Exception $e) {
-                    error_log('Error creating Notes instance: ' . $e->getMessage());
+                
+                $student = Eleves::where('num', $eleve_num)->first();
+        
+                
+                if ($student) {
+                    try {
+                        Notes::create([ 
+                            'eleve_id' => $student->id,
+                            'matiere' => $matiere,
+                            'note' => $note,
+                        ]); 
+                        error_log('success');
+                    } catch (\Exception $e) {
+                        error_log('Error creating Notes instance: ' . $e->getMessage());
+                        $success = false;
+                    }
+                } else {
+                    error_log('Student not found for number: ' . $eleve_num);
                     $success = false;
                 }
             } else {
-                // Handle missing or invalid data
+               
                 $success = false;
             }
-            
         }
+        
         if ($success) {$user = User::where('email', $request->input('email'))->first();
             $notification = new Notification();
             $notification->user_id = $user->id; 
