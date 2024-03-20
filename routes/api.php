@@ -31,7 +31,7 @@ Route::post('/auth', function (Request $request) {
         ->where('email', $email)
         ->first();
 
-    if ($user) {
+    if ($user) {    
         $user->token = $request->input('token');
         $user->save();
         
