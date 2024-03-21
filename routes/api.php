@@ -852,5 +852,27 @@ Route::delete('/delEvt/{id}', function($id) {
     DB::table('demandevt')->where('eleve_id', $id)->delete();
     return response()->json(['message' => 'Event deleted successfully'], 200);
 }); 
-
-
+Route::get('/getSer',function(){
+    $list=DB::table('demandser')
+    ->join('eleves','demandser.eleve_id','=','eleves.id')
+    ->join('services','demandser.service_id','=','services.id')
+    ->select('demandser.id','eleves.name as eleve_name','services.name as service_name')
+    ->get();
+    return response()->json(['list' => $list],200);
+});
+Route::delete('/delSe/{id}', function($id) {
+    DB::table('demandser')->where('id', $id)->delete();
+    return response()->json(['message' => 'Service deleted successfully'], 200);
+});
+Route::get('/getEvt',function(){
+    $list=DB::table('demandevt')
+    ->join('eleves','demandevt.eleve_id','=','eleves.id')
+    ->join('events','demandevt.event_id','=','events.id')
+    ->select('demandevt.id','eleves.name as eleve_name','events.name as event_name')
+    ->get();
+    return response()->json(['list' => $list],200);
+});
+Route::delete('/delEv/{id}', function($id) {
+    DB::table('demandevt')->where('id', $id)->delete();
+    return response()->json(['message' => 'event deleted successfully'], 200);
+});
