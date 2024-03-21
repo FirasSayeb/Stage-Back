@@ -318,7 +318,8 @@ Route::get('/getEleve/{id}', function($id) {
 
 Route::put('/updateEleve/{id}', function (Request $request, $id) {
     $eleve = Eleves::findOrFail($id);
-
+    if ($request->has('num')) {
+        $eleve->num = $request->input('num');}
     if ($request->has('name')) {
     $eleve->name = $request->input('name');}
     if ($request->has('lastname')) {
@@ -405,33 +406,51 @@ Route::delete('/deleteEnseignant/{email}', function($email) {
 });
 Route::put('/updateEnseignant', function(Request $request) {
     try {
-       
         $user = User::where('email', $request->input('email'))->first();
+        
+        // Update password if provided
         if ($request->has('password')) {
             $user->password = bcrypt($request->input('password'));
         }
+        
+        // Update avatar if provided
         if ($request->has('file')) {
-            
             $user->avatar = $request->input('file');
         }
+        
+        // Update phone and address
         $user->phone = $request->input('phone');
         $user->address = $request->input('address');
-        $user->save(); 
-        $classesToSync = []; 
         
-            $classList = explode(',', $request->input('list'));
-            foreach ($classList as $className) {
-                $class = Classes::where('name', $className)->first();
-               
-                     $classesToSync[$class->id] = ['created_at' => now(), 'updated_at' => now()];
-            } 
-        $user->classes()->sync($classesToSync);        
+        // Save user changes
+        $user->save(); 
+        
+        // Sync classes if 'list' parameter is provided
+        if ($request->has('list')) {
+            $classList = $request->input('list');
+            
+            // Clear user's classes if 'list' is empty
+            if (empty($classList)) {
+                $user->classes()->detach();
+            } else {
+                // Otherwise, sync user's classes
+                $classesToSync = [];
+                foreach (explode(',', $classList) as $className) {
+                    $class = Classes::where('name', $className)->first();
+                    if ($class) {
+                        $classesToSync[$class->id] = ['created_at' => now(), 'updated_at' => now()];
+                    }
+                }
+                $user->classes()->sync($classesToSync);
+            }
+        }
+        
         return response()->json(['message' => 'Enseignant updated successfully'], 200);
     } catch (Exception $e) {
-       
         return response()->json(['message' => 'Failed to update Enseignant', 'error' => $e->getMessage()], 500);
     }
-}); 
+});
+
 Route::get('/getUsers',function(){
    $list=User::all();
    return response()->json(['list'=>$list],200);
