@@ -262,27 +262,19 @@ Route::post('/addEleve',function(Request $request){
     $eleve->date_of_birth=$request->input('date');
     $eleve->class_id=Classes::where('name',$request->input('class'))->first()->id;
     $eleve->save();
-    $parent1Email = $request->input('parent1'); 
-    $parent2Email = $request->input('parent2'); 
-
-    
-    $parent1Id = User::where('email', $parent1Email)->value('id');
-    $parent2Id = User::where('email', $parent2Email)->value('id');
-
-    
-    if ($parent1Id) {
-        $eleveUser1 = new Haves();
+    $List = explode(',', $request->input('list'));
+    foreach($List as $parent){
+    $parent1Email = $parent;
+    $parent1Id = User::where('email', $parent1Email)->value('id'); 
+    $eleveUser1 = new Haves();
         $eleveUser1->eleve_id = $eleve->id;
         $eleveUser1->user_id = $parent1Id; 
         $eleveUser1->save();
     }
-
-    if ($parent2Id) {
-        $eleveUser2 = new Haves(); 
-        $eleveUser2->eleve_id = $eleve->id;
-        $eleveUser2->user_id = $parent2Id;
-        $eleveUser2->save();
-    }
+    
+    
+   
+    
     return response()->json(['message' => 'eleve added successfully'],200);
 
 });
@@ -339,23 +331,16 @@ Route::put('/updateEleve/{id}', function (Request $request, $id) {
          
      
     $eleve->save();
-
-    
-    $parent1Email = $request->input('parent1');
-    $parent2Email = $request->input('parent2');
-
-   
-    $parent1Id = User::where('email', $parent1Email)->value('id');
-    $parent2Id = User::where('email', $parent2Email)->value('id');
-
-     
     $parentsToSync = []; 
-    if ($parent1Id) {
+    $List = explode(',', $request->input('list'));
+    foreach($List as $parent){
+        $parent1Email = $parent;
+        $parent1Id = User::where('email', $parent1Email)->value('id'); 
         $parentsToSync[$parent1Id] = ['created_at' => now(), 'updated_at' => now()];
-    }
-    if ($parent2Id) {
-        $parentsToSync[$parent2Id] = ['created_at' => now(), 'updated_at' => now()];
-    }
+        }
+   
+     
+    
     $eleve->parents()->sync($parentsToSync);
 
     return response()->json(['message' => 'eleve updated successfully'], 200);
