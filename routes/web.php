@@ -33,9 +33,7 @@ Route::get('/getActualites',function(){
     return response()->json(['list'=>$actualites],200);
   });
 
-Route::group(['prefix' => 'admin'], function () {
-    Voyager::routes();
-});
+
 Route::get('/note',function(){
     return View('note');
 });

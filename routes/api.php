@@ -27,8 +27,7 @@ Route::post('/auth', function (Request $request) {
     $email = $request->input('email');
     $password = $request->input('password');
 
-    $user = User::with('role')
-        ->where('email', $email)
+    $user = User::where('email', $email)
         ->first();
 
     if ($user) {    
@@ -36,14 +35,14 @@ Route::post('/auth', function (Request $request) {
         $user->save();
         
         if (password_verify($password, $user->password)) {
-            switch ($user->role->name) {
-                case 'admin':
+            switch ($user->role_id) {
+                case 1:
                     return response()->json(['redirect_url' => 'admin'], 200);
                     break;
-                case 'parent':
+                case 2:
                     return response()->json(['redirect_url' => 'parent'], 200);
                     break;
-                case 'enseignant':
+                case 3:
                     return response()->json(['redirect_url' => 'enseignant'], 200);
                     break;
                 default:
