@@ -1,4 +1,5 @@
 <?php
+use App\Models\Absence;
 use App\Models\User;
 use App\Models\Haves;
 use App\Models\Notes;
@@ -94,10 +95,22 @@ Route::post('/addActualite', function (Request $request) {
 
     $actualite = new Actualite();
     $actualite->body = $body;
-    $actualite->file_path = $request->input('file');
     $actualite->user_id = $user->id;
     $actualite->created_at = $created_at;
+    $file = $request->file('file');
 
+    if ($file) {
+        
+        $filePath = $file->store('public');
+    
+        
+        $actualite->file_path = $filePath;
+    
+        
+        $actualite->save();
+    } else { 
+       
+    }
     if ($actualite->save()) {
         return response()->json(['message' => 'Actualite added successfully'], 200);
     } else {
@@ -122,15 +135,38 @@ Route::delete('/deleteActualite/{id}', function($id) {
         return response()->json(['error' => 'Failed to delete actualite', 'message' => $e->getMessage()], 500);
     }
 });
-Route::put('/updateActualite/{id}',function(Request $request,$id){
-    $actualite = Actualite::findOrFail($id);
-    $actualite->body=$request->input('body');
-    $actualite->file_path=$request->input('file');
-    $actualite->updated_at=now();
-    $actualite->save(); 
+Route::post('/updateActualite/{id}', function(Request $request, $id) {
+    try {
+        
+        $actualite = Actualite::findOrFail($id);
+         
+       
+        if ($request->has('body')) {
+            $actualite->body = $request->input('body');
+        }
+        
+        
+        if ($request->file('file')) {
+           
+            $filePath = $request->file('file')->store('public');
+
+            
+            $actualite->file_path = $filePath;
+        } else {
+           
+        }
+
+        
+        $actualite->save();
 
         return response()->json(['message' => 'Actualite updated successfully']);
+    } catch (Exception $e) {
+       
+        return response()->json(['error' => 'Failed to update actualite', 'error' => $e->getMessage()], 500);
+    }
 });
+
+
 Route::get('/getUser/{email}',function($email){ 
     $user = User::where('email', $email)->first();
     if ($user) {
@@ -141,17 +177,38 @@ Route::get('/getUser/{email}',function($email){
         return response()->json(['error' => 'User not found'], 404);
     }
 });
-Route::put('/updateUser', function (Request $request) {
+Route::post('/updateUser',  function (Request $request)
+{
     $user = User::where('email', $request->input('email'))->first();
-    if($request->input('password')){
-    $user->password = $request->input('password');}
-    $user->avatar = $request->input('file');
-    $user->phone = $request->input('phone'); 
-    $user->address = $request->input('address'); 
+
+    if (!$user) {
+        return response()->json(['error' => 'User not found'], 404);
+    }
+
+    if ($request->filled('password')) {
+        $user->password = bcrypt($request->input('password'));
+    }
+
+    
+    if ($request->hasFile('file')) {
+        $file = $request->file('file');
+        $filePath = $file->store('public'); 
+        $user->avatar = $filePath;
+    }
+
+    if ($request->filled('phone')) {
+        $user->phone = $request->input('phone');
+    }
+
+    if ($request->filled('address')) {
+        $user->address = $request->input('address');
+    }
+
     $user->save();
 
     return response()->json(['message' => 'User updated successfully'], 200);
 });
+
 Route::get('/getParents',function(){ 
     $parents=User::where('role_id',2)->get();
     return response()->json(['list'=>$parents],200);
@@ -173,7 +230,10 @@ Route::post('/addParent', function(Request $request) {
     $user->token = $request->input('token');
     $user->email = $request->input('email');
     $user->password = $request->input('password'); 
-    $user->avatar = $request->input('file');
+    if ($request->hasFile('file')) {
+        $filePath = $request->file('file')->store('public');
+        $user->avatar = $filePath;
+    }
     $user->address = $request->input('address'); 
     $user->phone = $request->input('phone');
     $user->save();
@@ -185,12 +245,26 @@ Route::post('/addParent', function(Request $request) {
 });
 Route::post('/addClasse', function(Request $request) {
     
-    $classe = new Classes(); 
-    $classe->name=$request->input('body');
-    $classe->emploi=$request->input('file');
-    $classe->examens=$request->input('examen');
+    $classe = new Classes();
+     
+   
+    $classe->name = $request->input('name'); 
+    
+    if ($request->hasFile('file')) {
+        $filePath1 = $request->file('file')->store('public');
+        $classe->emploi = $filePath1;
+    }
+    
+    if ($request->hasFile('examens')) {
+        $filePath2 = $request->file('examens')->store('public');
+        $classe->examens = $filePath2;
+    }
+
+    
     $classe->save();
-    return response()->json(['message' => 'Classe added successfully .'], 200);
+
+    
+    return response()->json(['message' => 'Class added successfully.'], 200);
 });
 Route::get('/getClasses', function () {
  
@@ -217,16 +291,19 @@ Route::get('/getClasse/{id}',function($id){
         return response()->json(['error' => 'classe not found'], 404);
     }
 });
-Route::put('/updateClasse/{id}',function(Request $request,$id){
+Route::post('/updateClasse/{id}',function(Request $request,$id){
     $classe = Classes::findOrFail($id);
     if($request->input('body')){
         $classe->name=$request->input('body');
     }
-    if($request->input('file')){
-        $classe->emploi=$request->input('file');
-    } 
-    if($request->input('examens')){
-        $classe->examens=$request->input('examens');
+    if ($request->hasFile('file')) {
+        $filePath1 = $request->file('file')->store('public');
+        $classe->emploi = $filePath1;
+    }
+    
+    if ($request->hasFile('examens')) {
+        $filePath2 = $request->file('examens')->store('public');
+        $classe->examens = $filePath2;
     }
     $classe->updated_at=now();  
     $classe->save(); 
@@ -256,7 +333,11 @@ Route::post('/addEleve',function(Request $request){
     $eleve=new Eleves();
     $eleve->name=$request->input('name');
     $eleve->num=$request->input('num');
-    $eleve->profil=$request->input('file');
+    if ($request->hasFile('file')) {
+        $filePath = $request->file('file')->store('public');
+        $eleve->profil = $filePath;
+    }
+
     $eleve->lastname=$request->input('lastname');
     $eleve->date_of_birth=$request->input('date');
     $eleve->class_id=Classes::where('name',$request->input('class'))->first()->id;
@@ -307,7 +388,7 @@ Route::get('/getEleve/{id}', function($id) {
     }
 }); 
 
-Route::put('/updateEleve/{id}', function (Request $request, $id) {
+Route::post('/updateEleve/{id}', function (Request $request, $id) {
     $eleve = Eleves::findOrFail($id);
     if ($request->has('num')) {
         $eleve->num = $request->input('num');}
@@ -317,8 +398,10 @@ Route::put('/updateEleve/{id}', function (Request $request, $id) {
     $eleve->lastname = $request->input('lastname');}
     if ($request->has('date')) {
     $eleve->date_of_birth = $request->input('date');}
-    if ($request->has('file')) {
-    $eleve->profil = $request->input('file');}
+    if ($request->hasFile('file')) {
+        $filePath1 = $request->file('file')->store('public');
+        $eleve->profil = $filePath1;
+    }
    
     if ($request->has('class')) {
         $className = $request->input('class');
@@ -329,19 +412,29 @@ Route::put('/updateEleve/{id}', function (Request $request, $id) {
     }
          
      
-    $eleve->save();
-    $parentsToSync = []; 
-    $List = explode(',', $request->input('list'));
-    foreach($List as $parent){
-        $parent1Email = $parent;
-        $parent1Id = User::where('email', $parent1Email)->value('id'); 
-        $parentsToSync[$parent1Id] = ['created_at' => now(), 'updated_at' => now()];
-        }
-   
-     
+    $eleve->save(); 
+    if ($request->input('list') != "") {
+        $List = explode(',', $request->input('list'));
     
-    $eleve->parents()->sync($parentsToSync);
-
+        if ($List) {
+            $parentsToSync = [];
+    
+            foreach ($List as $parent) {
+                $parent1Email = $parent;
+                $parent1Id = User::where('email', $parent1Email)->value('id');
+    
+                if ($parent1Id !== null && $parent1Id !== '') {
+                    $parentsToSync[$parent1Id] = ['created_at' => now(), 'updated_at' => now()];
+                } else {
+                    
+                }
+                
+            }
+            
+            $eleve->parents()->sync($parentsToSync);
+        }
+    }
+    
     return response()->json(['message' => 'eleve updated successfully'], 200);
 });
 Route::get('/getEnseignants',function(){ 
@@ -356,7 +449,20 @@ Route::post('/addEnseignant', function(Request $request) {
     $user->email = $request->input('email');
     $user->token = $request->input('token');
     $user->password = $request->input('password'); 
-    $user->avatar = $request->input('file');
+    $file = $request->file('file');
+    
+    if ($file) {
+        
+        $filePath = $file->store('public');
+    
+        
+        $user->avatar = $filePath;
+    
+        
+       
+    } else { 
+       
+    }
     $user->address = $request->input('address'); 
     $user->phone = $request->input('phone');
     $user->save(); 
@@ -388,36 +494,43 @@ Route::delete('/deleteEnseignant/{email}', function($email) {
         return response()->json(['error' => 'Failed to delete parent', 'message' => $e->getMessage()], 500);
     }
 });
-Route::put('/updateEnseignant', function(Request $request) {
+Route::post('/updateEnseignant', function(Request $request) {
     try {
         $user = User::where('email', $request->input('email'))->first();
         
-        // Update password if provided
+        
         if ($request->has('password')) {
             $user->password = bcrypt($request->input('password'));
         }
         
-        // Update avatar if provided
-        if ($request->has('file')) {
-            $user->avatar = $request->input('file');
+        
+        if ($request->has('phone')) {
+        $user->phone = $request->input('phone');}
+        if ($request->has('address')) {
+        $user->address = $request->input('address');}
+        $file = $request->file('file');
+        if ($file) {
+            
+            $filePath = $file->store('public');
+        
+            
+            $user->avatar = $filePath;
+        
+            
+           
+        } else { 
+             
         }
+        $user->save();
         
-        // Update phone and address
-        $user->phone = $request->input('phone');
-        $user->address = $request->input('address');
-        
-        // Save user changes
-        $user->save(); 
-        
-        // Sync classes if 'list' parameter is provided
         if ($request->has('list')) {
             $classList = $request->input('list');
             
-            // Clear user's classes if 'list' is empty
+           
             if (empty($classList)) {
-                $user->classes()->detach();
+               // $user->classes()->detach();
             } else {
-                // Otherwise, sync user's classes
+               
                 $classesToSync = [];
                 foreach (explode(',', $classList) as $className) {
                     $class = Classes::where('name', $className)->first();
@@ -432,6 +545,7 @@ Route::put('/updateEnseignant', function(Request $request) {
         return response()->json(['message' => 'Enseignant updated successfully'], 200);
     } catch (Exception $e) {
         return response()->json(['message' => 'Failed to update Enseignant', 'error' => $e->getMessage()], 500);
+
     }
 });
 
@@ -487,6 +601,7 @@ Route::post('/addService',function(Request $request){
     $service=new Services();
     $service->name=$request->input('name');
     $service->price=$request->input('price');
+    $service->description=$request->input('description');
     $service->save();
     return response()->json(['message'=>'service added successfully'],200); 
 });
@@ -513,6 +628,9 @@ Route::put('/updateService/{name}', function($name, Request $request) {
         if ($request->input('price')) {
             $service->price = $request->input('price');
         }
+        if ($request->input('description')) {
+            $service->description = $request->input('description');
+        }
         $service->save(); 
         return response()->json(['message' => 'Service modified successfully'], 200);
     } else {
@@ -525,6 +643,7 @@ Route::get('/getEvents',function(){
 }); 
 Route::post('/addEvent',function(Request $request){
     $event=new Events(); 
+    $event->description=$request->input('description');
     $event->name=$request->input('name');
     $event->price=$request->input('price');
     $event->date=$request->input('date');
@@ -555,6 +674,9 @@ Route::put('/updateEvent/{name}', function($name, Request $request) {
         }
          if ($request->input('date')) {
             $event->date = $request->input('date');
+        }
+        if ($request->input('description')) {
+            $event->description = $request->input('description');
         }
         $event->save();  
         return response()->json(['message' => 'Event modified successfully'], 200);
@@ -648,7 +770,7 @@ Route::get('/getUsers/{name}', function($name) {
             return $student->parents;
         });
 
-        
+        $parents=$parents->unique();
         return response()->json(['list'=>$parents],200); 
     } else {
          
@@ -684,7 +806,7 @@ Route::post('/addNote', function(Request $request) {
         $data = Excel::toArray([], $file);
 
         $success = true;
-
+        Notes::truncate();
         foreach ($data[0] as $row) { 
             $eleve_num = $row[0] ?? null;
             $matiere = $row[1] ?? null;
@@ -735,7 +857,7 @@ Route::post('/addNote', function(Request $request) {
             }
             return response()->json(['message' => 'File uploaded and processed successfully'], 200);
         } else {
-            return response()->json(['error' => 'Some rows could not be processed.'], 400);
+           
         }
     } else {
         return response()->json(['error' => 'No file uploaded'], 400);
@@ -813,7 +935,13 @@ Route::get('/getNoti/{email}', function ($email) {
     $notificationIds = DB::table('notification_user')->where('user_id', $user->id)->pluck('notification_id');
 
    
-    $notifications = Notification::whereIn('id', $notificationIds)->orderBy('created_at', 'desc')->get();
+    $notifications = DB::table('notifications')  
+    ->join('users', 'notifications.user_id', '=', 'users.id')
+    ->whereIn('notifications.id', $notificationIds)
+    ->orderBy('notifications.created_at', 'desc')
+    ->select('notifications.*', 'users.name as sender_name')
+    ->get();
+
 
     return response()->json(['list' => $notifications]);
 });
@@ -879,3 +1007,111 @@ Route::delete('/delEv/{id}', function($id) {
     DB::table('demandevt')->where('id', $id)->delete();
     return response()->json(['message' => 'event deleted successfully'], 200);
 });
+Route::get('/getUserss/{email}', function ($email) {
+    
+    $parent = User::where('email', $email)->first();
+
+   
+    $sons = $parent->sons;
+    $classes = [];
+    foreach ($sons as $son) {
+        $classes = array_merge($classes, $son->class->pluck('id')->toArray());
+    }
+
+    
+    $teachers = collect();
+    foreach ($classes as $classId) {
+        
+        $classTeachers = Teaches::where('class_id', $classId)->get();
+        foreach ($classTeachers as $classTeacher) {
+            $teacher = User::find($classTeacher->user_id);
+           
+            $teachers->push($teacher);
+        }
+    }
+
+    
+    $admins = User::where('role_id', 1)->get();
+
+    
+$teachersArray = $teachers->toArray();
+$adminsArray = $admins->toArray();
+$mergedArray = array_merge($teachersArray, $adminsArray);
+
+
+$mergedCollection = collect($mergedArray);
+
+$uniqueTeachers = $mergedCollection->unique('id')->values();
+
+return response()->json(['list' => $uniqueTeachers], 200);
+
+});
+
+Route::post('/marquerAbsence', function(Request $request) {
+    
+    $user = User::where('email', $request->input('email'))->first();
+    if (!$user) {
+        return response()->json(['error' => 'User not found'], 404);
+    }
+    
+    $absenceList = json_decode($request->input('absenceList'), true);
+    $class = Classes::where('name', $request->input('class'))->first();
+    $eleves = Eleves::where('class_id', $class->id)->get();
+for ($i = 0; $i < count($eleves); $i++) {
+    $is_absent = isset($absenceList[$i]) ? $absenceList[$i] : false; 
+    Absence::create([
+        'user_id' => $user->id,
+        'eleve_id' => $eleves[$i]->id,
+        'matiere' => $request->input('selectedOption'),
+        'is_absent' => $is_absent,
+        'date' => $request->input('selectedDateTime'),
+    ]);
+        $notification = new Notification();
+    $notification->user_id = $user->id; 
+    $notification->body = $eleves[$i]->name ."   ".'absent'."   " .$request->input('selectedOption')."   ".$request->input('selectedDateTime');
+    $notification->save(); 
+    $destUsers=$eleves[$i]->parents;
+    
+    foreach($destUsers as $destUser){
+        DB::table('notification_user')->insert([
+            'notification_id' => $notification->id,
+            'user_id' => $destUser->id
+        ]); 
+    }
+    }
+    return response()->json(['message' => 'Absence records inserted successfully'], 200);
+});
+Route::get('/getAbsences/{id}', function($id) {
+    $absences = DB::table('absences')
+                ->join('users', 'absences.user_id', '=', 'users.id')
+                ->where('absences.eleve_id', $id)
+                ->where('absences.is_absent', 0)
+                ->select('absences.id', 'users.name as user_name', 'absences.matiere', 'absences.is_absent', 'absences.date')
+                ->get();
+    
+    return response()->json(['list' => $absences], 200);
+});
+
+Route::get('/getAbsence',function(){
+    $absences = DB::table('absences')
+                ->join('users', 'absences.user_id', '=', 'users.id')
+                ->join('eleves','absences.eleve_id','=','eleves.id')
+                ->where('absences.is_absent', 0)
+                ->orderBy('absences.date', 'DESC')
+                ->select('eleves.name as eleve_name', 'users.name as user_name', 'absences.matiere', 'absences.is_absent', 'absences.date')
+                ->get();
+                return response()->json(['list' => $absences], 200);
+});
+Route::get('/getElevs/{id}',function($id){
+    $list = Eleves::with('class', 'parents')->where('class_id',$id)->get();
+   return response()->json(['list' => $list], 200);
+});
+Route::get('/getEmlpois/{id}',function($id){
+  $list=Eleves::find($id)->class;
+  return response()->json(['list'=> $list],200);
+});
+Route::get('/getName/{email}',function($email){
+    $user=User::where('email',$email)->first();
+    return response()->json(['name'=>$user->name],200); 
+});
+     
