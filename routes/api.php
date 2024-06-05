@@ -1066,18 +1066,21 @@ for ($i = 0; $i < count($eleves); $i++) {
         'is_absent' => $is_absent,
         'date' => $request->input('selectedDateTime'),
     ]);
+    if(!$is_absent){
         $notification = new Notification();
-    $notification->user_id = $user->id; 
-    $notification->body = $eleves[$i]->name ."   ".'absent'."   " .$request->input('selectedOption')."   ".$request->input('selectedDateTime');
-    $notification->save(); 
-    $destUsers=$eleves[$i]->parents;
-    
-    foreach($destUsers as $destUser){
-        DB::table('notification_user')->insert([
-            'notification_id' => $notification->id,
-            'user_id' => $destUser->id
-        ]); 
+        $notification->user_id = $user->id; 
+        $notification->body = $eleves[$i]->name ."   ".'absent'."   " .$request->input('selectedOption')."   ".$request->input('selectedDateTime');
+        $notification->save(); 
+        $destUsers=$eleves[$i]->parents;
+        
+        foreach($destUsers as $destUser){
+            DB::table('notification_user')->insert([
+                'notification_id' => $notification->id,
+                'user_id' => $destUser->id
+            ]); 
+        } 
     }
+       
     }
     return response()->json(['message' => 'Absence records inserted successfully'], 200);
 });
