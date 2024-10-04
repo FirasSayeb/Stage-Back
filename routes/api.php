@@ -239,7 +239,7 @@ Route::post('/addParent', function(Request $request) {
     $user->save();
 
     
-    Mail::to($user->email)->send(new HelloMail($user->name, 'firassayeb2@gmail.com', 'Welcome!', 'Your account has been created. Here are your login credentials: Email: '.$user->email.' Password: '.$request->input('password')));
+    Mail::to($user->email)->send(new HelloMail($user->name, '', 'Welcome!', 'Your account has been created. Here are your login credentials: Email: '.$user->email.' Password: '.$request->input('password')));
 
     return response()->json(['message' => 'Parent added successfully and email sent.'], 200);
 });
@@ -481,7 +481,7 @@ foreach ($classList as $className) {
 }
 
 
-    Mail::to($user->email)->send(new HelloMail($user->name, 'firassayeb2@gmail.com', 'Welcome!', 'Your account has been created. Here are your login credentials: Email: '.$user->email.' Password: '.$request->input('password')));
+    Mail::to($user->email)->send(new HelloMail($user->name, '', 'Welcome!', 'Your account has been created. Here are your login credentials: Email: '.$user->email.' Password: '.$request->input('password')));
 
     return response()->json(['message' => 'Enseignant added successfully and email sent.'], 200);
 });

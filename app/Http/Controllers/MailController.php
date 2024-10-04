@@ -23,7 +23,7 @@ $mess = "Your verification code: " . $verificationCode;
 $mailData = [ 
 'url' => 'https://sandroft.com/',
 ];
-$send_mail = "firassayeb2@gmail.com";
+$send_mail = "";
 try{
     Mail::to($email)->send(new HelloMail($name, $send_mail, $sub, $mess));
     /*return view('name',[
